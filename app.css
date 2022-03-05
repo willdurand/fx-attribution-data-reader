@@ -1,0 +1,12 @@
+pre {
+  background-color: var(--code-bg-color);
+}
+
+table td {
+  line-break: anywhere;
+}
+
+footer p {
+  font-size: 0.8em;
+  text-align: center;
+}
