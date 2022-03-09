@@ -2,6 +2,10 @@ pre {
   background-color: var(--code-bg-color);
 }
 
+pre code {
+  overflow-x: initial;
+}
+
 table td {
   line-break: anywhere;
 }
