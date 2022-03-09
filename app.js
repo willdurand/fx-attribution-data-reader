@@ -33,11 +33,21 @@ const decodeRTAMO = (value) =>
   atob(value.slice(4).replace(/_/g, "/").replace(/-/g, "+"));
 
 const App = {
+  SHARE_QS: "?share",
+
   init() {
     this.$inputFile = document.getElementById("input-file");
     this.$inputMessage = document.getElementById("input-message");
     this.$outputRaw = document.getElementById("output-raw");
     this.$outputPretty = document.getElementById("output-pretty");
+
+    const url = new URL(window.location);
+    if (url.search === this.SHARE_QS) {
+      const attributionData = url.hash.slice(1);
+      this.$inputMessage.textContent = "Loading data from URL... OK";
+
+      this.renderAttributionData(attributionData);
+    }
 
     this.$inputFile.addEventListener(
       "change",
@@ -68,6 +78,7 @@ const App = {
       this.$inputMessage.textContent += " OK";
 
       this.renderAttributionData(attributionData);
+      this.setShareURL(attributionData);
     } catch (err) {
       this.$inputMessage.textContent = `Error: ${err.message}`;
     }
@@ -129,6 +140,13 @@ const App = {
         return `<tr><td>${key}</td><td>${value}</td></tr>`;
       })
       .join("");
+  },
+
+  setShareURL(attributionData) {
+    const url = new URL(window.location);
+    url.search = this.SHARE_QS;
+    url.hash = `#${attributionData}`;
+    window.history.pushState({}, "", url);
   },
 };
 
