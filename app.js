@@ -128,6 +128,16 @@ const App = {
 
   renderAttributionData(attributionData) {
     this.$outputRaw.textContent = attributionData;
+
+    if (attributionData.length === 0) {
+      this.$outputPretty.innerHTML = `<tr>
+        <td align="center" colspan="2">
+          (no attribution data)
+        </td>
+      </tr>`;
+      return;
+    }
+
     this.$outputPretty.innerHTML = attributionData
       .split("&")
       .map((part) => part.split("="))
