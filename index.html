@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Firefox attribution data reader for Windows installers</title>
+    <title>Attribution data reader for Firefox installers</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="libs/terminal.min.css" />
@@ -12,7 +12,7 @@
       <header class="header">
         <div class="logo">
           <a href="./">
-            Firefox attribution data reader for Windows installers
+            Attribution data reader for Firefox installers
           </a>
         </div>
         <hr />
@@ -27,23 +27,31 @@
 
         <div class="info">
           <p>
-            This is a simple tool to show attribution data in Firefox installers
-            for Windows. It can be used to diagnose issues with features such as
-            RTAMO. No "server-side" is involved, everything is performed in the
-            browser.
+            This is a simple tool to show attribution data in Firefox
+            installers for Windows and macOS (experimental). It can be used to
+            diagnose issues with features such as RTAMO or any problem related
+            to attribution data.
+          </p>
+          <p>
+            No "server-side" is involved, everything is performed locally in
+            the browser.
           </p>
           <h2>Help:</h2>
           <p>
-            Select a Windows installer for Firefox in the "Input:" section below
-            and the attribution data should automatically appear under
-            "Output:". Such an installer is usually downloaded from
-            <em>www.mozilla.org</em> and it should be named
-            <code>Firefox Installer.exe</code>.
+            Select an installer for Firefox in the "Input:" section below and
+            the attribution data should automatically appear under "Output:".
           </p>
           <p>
-            Once an installer has been successfully read, the URL is updated
-            and can be shared. The attribution data is put in the "hash" part
-            of the URL for privacy purposes.
+            Such an installer is usually downloaded from
+            <em>www.mozilla.org</em>.  It should be named <code>Firefox
+            Installer.exe</code> for Windows and <code>Firefox 110.0.dmg</code>
+            for macOS (where "110.0" is the version, which will likely be
+            different).
+          </p>
+          <p>
+            Once a Windows installer has been successfully read, the URL is
+            updated and can be shared. The attribution data is put in the
+            "hash" part of the URL for privacy purposes.
           </p>
           <p>
             Note that an installer may not contain any data, in which case the
@@ -56,7 +64,7 @@
           <h2>Input:</h2>
           <div class="form-group">
             <label for="input-file">Select a file:</label>
-            <input id="input-file" type="file" accept=".exe" />
+            <input id="input-file" type="file" accept=".exe,.dmg" />
           </div>
 
           <p id="input-message"></p>
@@ -81,6 +89,7 @@
 
     <script src="libs/KaitaiStream.js"></script>
     <script src="libs/MicrosoftPe.js"></script>
+    <script src="kaitai/Dmg.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
