@@ -59,13 +59,15 @@ const App = {
     this.resetUI();
 
     if (this.$inputFile.files?.length) {
+      const [file] = this.$inputFile.files;
       const reader = new FileReader();
-      reader.onloadend = () => this.onInputFileLoaded(reader);
-      reader.readAsArrayBuffer(this.$inputFile.files[0]);
+
+      reader.onloadend = () => this.onInputFileLoaded(reader, file.name);
+      reader.readAsArrayBuffer(file);
     }
   },
 
-  async onInputFileLoaded(reader) {
+  async onInputFileLoaded(reader, fileName) {
     this.$inputMessage.textContent = "Reading file...";
 
     if (!reader.result) {
@@ -74,11 +76,19 @@ const App = {
     }
 
     try {
-      const attributionData = await this.readAttributionData(reader.result);
+      const attributionData = await this.readAttributionData(
+        reader.result,
+        fileName
+      );
       this.$inputMessage.textContent += " OK";
 
       this.renderAttributionData(attributionData);
-      this.setShareURL(attributionData);
+
+      // TODO: we do not make a shareable URL for macOS because we currently do
+      // not fetch the attribution data.
+      if (!fileName.endsWith(".dmg")) {
+        this.setShareURL(attributionData);
+      }
     } catch (err) {
       this.$inputMessage.textContent = `Error: ${err.message}`;
     }
@@ -90,12 +100,21 @@ const App = {
     this.$outputPretty.textContent = "";
   },
 
-  async readAttributionData(arrayBuffer) {
+  async readAttributionData(arrayBuffer, fileName) {
+    if (fileName.endsWith(".dmg")) {
+      return this.readAttributionDataForMacOS(arrayBuffer);
+    }
+
+    return this.readAttributionDataForWindows(arrayBuffer);
+  },
+
+  async readAttributionDataForWindows(arrayBuffer) {
     let data;
 
     try {
       data = new MicrosoftPe(new KaitaiStream(arrayBuffer));
     } catch (err) {
+      console.error(err);
       throw new Error("could not parse file, not a PE file?");
     }
 
@@ -121,6 +140,39 @@ const App = {
       }
 
       return decoded;
+    }
+
+    throw new Error("attribution data not found");
+  },
+
+  async readAttributionDataForMacOS(arrayBuffer) {
+    let data;
+
+    try {
+      data = new Dmg(new KaitaiStream(arrayBuffer));
+    } catch (err) {
+      console.error(err);
+      throw new Error("could not parse file, not a DMG file?");
+    }
+
+    if (data.kolyBlock?.xmlLength > 0) {
+      const { xmlLength, xmlOffset } = data.kolyBlock;
+
+      try {
+        const xmlDoc = new DOMParser().parseFromString(
+          new TextDecoder().decode(
+            arrayBuffer.slice(xmlOffset, xmlOffset + xmlLength)
+          ),
+          "text/xml"
+        );
+
+        // TODO: actually retrieve the attribution data.
+
+        return new XMLSerializer().serializeToString(xmlDoc);
+      } catch (err) {
+        console.log(err);
+        // Do nothing else, we throw an error below anyway.
+      }
     }
 
     throw new Error("attribution data not found");
