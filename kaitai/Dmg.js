@@ -74,6 +74,17 @@ var Dmg = (function() {
 
     return KolyBlockT;
   })();
+  Object.defineProperty(Dmg.prototype, 'xmlPlist', {
+    get: function() {
+      if (this._m_xmlPlist !== undefined)
+        return this._m_xmlPlist;
+      var _pos = this._io.pos;
+      this._io.seek(this.kolyBlock.xmlOffset);
+      this._m_xmlPlist = KaitaiStream.bytesToStr(this._io.readBytes(this.kolyBlock.xmlLength), "UTF-8");
+      this._io.seek(_pos);
+      return this._m_xmlPlist;
+    }
+  });
   Object.defineProperty(Dmg.prototype, 'kolyBlock', {
     get: function() {
       if (this._m_kolyBlock !== undefined)
