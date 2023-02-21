@@ -2,6 +2,11 @@ meta:
   id: dmg
   endian: be
 instances:
+  xml_plist:
+    type: str
+    encoding: UTF-8
+    pos: koly_block.xml_offset
+    size: koly_block.xml_length
   koly_block:
     pos: _io.size - 512
     type: koly_block_t

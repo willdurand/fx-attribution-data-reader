@@ -146,33 +146,22 @@ const App = {
   },
 
   async readAttributionDataForMacOS(arrayBuffer) {
-    let data;
-
     try {
-      data = new Dmg(new KaitaiStream(arrayBuffer));
-    } catch (err) {
-      console.error(err);
-      throw new Error("could not parse file, not a DMG file?");
-    }
+      const data = new Dmg(new KaitaiStream(arrayBuffer));
 
-    if (data.kolyBlock?.xmlLength > 0) {
-      const { xmlLength, xmlOffset } = data.kolyBlock;
-
-      try {
+      if (data.xmlPlist?.length) {
         const xmlDoc = new DOMParser().parseFromString(
-          new TextDecoder().decode(
-            arrayBuffer.slice(xmlOffset, xmlOffset + xmlLength)
-          ),
+          data.xmlPlist,
           "text/xml"
         );
 
         // TODO: actually retrieve the attribution data.
 
         return new XMLSerializer().serializeToString(xmlDoc);
-      } catch (err) {
-        console.log(err);
-        // Do nothing else, we throw an error below anyway.
       }
+    } catch (err) {
+      console.log(err);
+      // Do nothing else, we throw an error below anyway.
     }
 
     throw new Error("attribution data not found");
