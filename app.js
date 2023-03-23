@@ -1,3 +1,4 @@
+// This is for Windows attribution.
 const MozCustom = {
   TAG: "__MOZCUSTOM__:",
   LEN: 1024,
@@ -28,6 +29,9 @@ const MozCustom = {
     return bytes.slice(0, firstNullByte);
   },
 };
+
+// This is for macOS attribution.
+const MozAnchor = "__MOZILLA__";
 
 const decodeRTAMO = (value) =>
   atob(value.slice(4).replace(/_/g, "/").replace(/-/g, "+"));
@@ -147,17 +151,42 @@ const App = {
 
   async readAttributionDataForMacOS(arrayBuffer) {
     try {
-      const data = new Dmg(new KaitaiStream(arrayBuffer));
+      const stream = new KaitaiStream(arrayBuffer);
+      // We need to read a special block in the DMG file, called the "koly"
+      // block. There should be some information about a XML property list
+      // file in this block.
+      const dmg = new Dmg(stream);
 
-      if (data.xmlPlist?.length) {
-        const xmlDoc = new DOMParser().parseFromString(
-          data.xmlPlist,
-          "text/xml"
+      if (dmg.xmlPlist?.length) {
+        // If we find the property list file, then we can attempt to parse it.
+        // We are looking for an "attribution" key, which contains new
+        // information about where to find the attribution data.
+        const [attribution] = plist.parse(dmg.xmlPlist)["resource-fork"]
+          ?.attribution;
+
+        // Assuming things look okay, we now have to parse the binary data for
+        // this attribution key in the property list file. This is encoded as a
+        // structure coming from the `libdmg-hfsplus` project so we need a new
+        // parser.
+        const { attributionResource } = new Attribution(
+          new KaitaiStream(attribution.Data)
         );
 
-        // TODO: actually retrieve the attribution data.
+        // Let's extract the actual attribution data in the DMG file now that
+        // we have all the information we need.
+        stream.seek(attributionResource.rawPos);
 
-        return new XMLSerializer().serializeToString(xmlDoc);
+        let data = stream.readBytes(attributionResource.rawLength);
+        data = KaitaiStream.bytesToStr(data, "utf-8");
+        // The data we extract is huge and `libdmg-hfsplus` seems to inject the
+        // data somehwere but not necessarily at the start of the block of
+        // data. In addition, there might be junk after, though I don't get
+        // why. Anyway... let's find the data and then we get rid of everything
+        // after the first null byte.
+        data = data.substr(data.indexOf(MozAnchor) + MozAnchor.length);
+        data = data.substr(0, data.indexOf("\0"));
+
+        return data;
       }
     } catch (err) {
       console.log(err);
