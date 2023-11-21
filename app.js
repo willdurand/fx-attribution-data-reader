@@ -31,7 +31,7 @@ const MozCustom = {
 };
 
 // This is for macOS attribution.
-const MozAnchor = "__MOZILLA__";
+const MozAnchor = "__MOZCUSTOM__";
 
 const decodeRTAMO = (value) =>
   atob(value.slice(4).replace(/_/g, "/").replace(/-/g, "+"));
@@ -55,7 +55,7 @@ const App = {
 
     this.$inputFile.addEventListener(
       "change",
-      this.onInputFileChange.bind(this)
+      this.onInputFileChange.bind(this),
     );
   },
 
@@ -82,7 +82,7 @@ const App = {
     try {
       const attributionData = await this.readAttributionData(
         reader.result,
-        fileName
+        fileName,
       );
       this.$inputMessage.textContent += " OK";
 
@@ -159,18 +159,31 @@ const App = {
 
       if (dmg.xmlPlist?.length) {
         // If we find the property list file, then we can attempt to parse it.
-        // We are looking for an "attribution" key, which contains new
-        // information about where to find the attribution data.
-        const [attribution] = plist.parse(dmg.xmlPlist)["resource-fork"]
-          ?.attribution;
+        // We are looking for the first property list in the "resource-fork".
+        const [plst] = plist.parse(dmg.xmlPlist)["resource-fork"].plst;
 
-        // Assuming things look okay, we now have to parse the binary data for
-        // this attribution key in the property list file. This is encoded as a
-        // structure coming from the `libdmg-hfsplus` project so we need a new
-        // parser.
-        const { attributionResource } = new Attribution(
-          new KaitaiStream(attribution.Data)
+        // We store the raw attribution metadata in the plist's name, the raw
+        // value is base64-encoded and might contain special characters that we
+        // must strip first.
+        const rawAttributionMetadata = Uint8Array.from(
+          atob(plst.Name.replaceAll("\t", "").replaceAll("\n", "")),
+          (m) => m.codePointAt(0),
         );
+
+        if (rawAttributionMetadata.length !== 76) {
+          throw new Error("bad object length");
+        }
+
+        // Assuming things look okay, we now have to parse the metadata. This
+        // is encoded as a structure coming from the `libdmg-hfsplus` project
+        // so we need a new parser.
+        const { attributionResource } = new Attribution(
+          new KaitaiStream(rawAttributionMetadata),
+        );
+
+        if (attributionResource.version !== 1) {
+          throw new Error("invalid attribution resource version");
+        }
 
         // Let's extract the actual attribution data in the DMG file now that
         // we have all the information we need.
@@ -184,6 +197,7 @@ const App = {
         // why. Anyway... let's find the data and then we get rid of everything
         // after the first null byte.
         data = data.substr(data.indexOf(MozAnchor) + MozAnchor.length);
+        data = data.replaceAll("\t", "\0");
         data = data.substr(0, data.indexOf("\0"));
 
         return data;

@@ -57,17 +57,6 @@ var Attribution = (function() {
       return this._m_attributionResource;
     }
   });
-  Object.defineProperty(Attribution.prototype, 'attribution', {
-    get: function() {
-      if (this._m_attribution !== undefined)
-        return this._m_attribution;
-      var _pos = this._io.pos;
-      this._io.seek(this.attributionResource.rawPos);
-      this._m_attribution = KaitaiStream.bytesToStr(this._io.readBytes(this.attributionResource.rawLength), "UTF-8");
-      this._io.seek(_pos);
-      return this._m_attribution;
-    }
-  });
 
   return Attribution;
 })();
