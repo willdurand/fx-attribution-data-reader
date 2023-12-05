@@ -36,6 +36,22 @@ const MozAnchor = "__MOZCUSTOM__";
 const decodeRTAMO = (value) =>
   atob(value.slice(4).replace(/_/g, "/").replace(/-/g, "+"));
 
+const decodeAttributionString = (value) => {
+  while (value.includes("%")) {
+    try {
+      const result = decodeURIComponent(value);
+      if (result === value) {
+        break;
+      }
+      value = result;
+    } catch {
+      break;
+    }
+  }
+
+  return value;
+};
+
 const App = {
   SHARE_QS: "?share",
 
@@ -88,11 +104,7 @@ const App = {
 
       this.renderAttributionData(attributionData);
 
-      // TODO: we do not make a shareable URL for macOS because we currently do
-      // not fetch the attribution data.
-      if (!fileName.endsWith(".dmg")) {
-        this.setShareURL(attributionData);
-      }
+      this.setShareURL(attributionData);
     } catch (err) {
       this.$inputMessage.textContent = `Error: ${err.message}`;
     }
@@ -129,21 +141,7 @@ const App = {
     data = MozCustom.getValue(data.pe.certificateTable.items[0]);
 
     if (data) {
-      let decoded = new TextDecoder().decode(data);
-
-      while (decoded.includes("%")) {
-        try {
-          const result = decodeURIComponent(decoded);
-          if (result === decoded) {
-            break;
-          }
-          decoded = result;
-        } catch {
-          break;
-        }
-      }
-
-      return decoded;
+      return decodeAttributionString(new TextDecoder().decode(data));
     }
 
     throw new Error("attribution data not found");
@@ -200,7 +198,7 @@ const App = {
         data = data.replaceAll("\t", "\0");
         data = data.substr(0, data.indexOf("\0"));
 
-        return data;
+        return decodeAttributionString(data);
       }
     } catch (err) {
       console.log(err);
